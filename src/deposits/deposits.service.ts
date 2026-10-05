@@ -25,7 +25,16 @@ import {
 } from './verification/payment-verification.provider';
 import { providerFamilyForMethod } from './verification/receipt-matcher';
 
-const DEPOSIT_MIN_ETB = 50;
+const DEPOSIT_MIN_ETB = 20;
+/** Hidden test amount — accepted for live verification trials. */
+const DEPOSIT_TEST_ETB = 2;
+
+function isAllowedDepositAmount(amountEtb: number): boolean {
+  return (
+    Number.isFinite(amountEtb) &&
+    (amountEtb === DEPOSIT_TEST_ETB || amountEtb >= DEPOSIT_MIN_ETB)
+  );
+}
 
 @Injectable()
 export class DepositsService {
@@ -49,7 +58,7 @@ export class DepositsService {
       externalReference?: string;
     },
   ) {
-    if (!Number.isFinite(input.amountEtb) || input.amountEtb < DEPOSIT_MIN_ETB) {
+    if (!isAllowedDepositAmount(input.amountEtb)) {
       throw new BadRequestException({
         code: 'VALIDATION_ERROR',
         message: `Minimum deposit is ${DEPOSIT_MIN_ETB} ETB`,

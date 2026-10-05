@@ -38,7 +38,7 @@ class UpdatePhoneDto {
 
 class CreateDepositDto {
   @IsNumber()
-  @Min(50)
+  @Min(2)
   amountEtb!: number;
 
   @IsEnum(PaymentMethod)

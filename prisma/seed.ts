@@ -60,14 +60,14 @@ async function main() {
       botUsername: process.env.TELEGRAM_BOT_USERNAME || 'lottery_dev_bot',
       supportContact: '@lottery_support',
       paymentInstructions:
-        'Transfer the exact amount to the selected account, then upload your payment screenshot. Min 50 ETB.',
+        'Transfer the exact amount to the selected account, then upload your payment screenshot. Min 20 ETB.',
       paymentAccounts: DEFAULT_PAYMENT_ACCOUNTS,
     },
     update: {
       botUsername: process.env.TELEGRAM_BOT_USERNAME || 'lottery_dev_bot',
       supportContact: '@lottery_support',
       paymentInstructions:
-        'Transfer the exact amount to the selected account, then upload your payment screenshot. Min 50 ETB.',
+        'Transfer the exact amount to the selected account, then upload your payment screenshot. Min 20 ETB.',
       paymentAccounts: DEFAULT_PAYMENT_ACCOUNTS,
     },
   });
