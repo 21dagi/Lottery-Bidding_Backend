@@ -46,10 +46,10 @@ async function bootstrap() {
     .build();
   SwaggerModule.setup('api/docs', app, SwaggerModule.createDocument(app, swagger));
 
-  const port = config.get<number>('PORT') || 3000;
-  await app.listen(port);
+  const port = Number(process.env.PORT) || config.get<number>('PORT') || 3000;
+  await app.listen(port, '0.0.0.0');
   // eslint-disable-next-line no-console
-  console.log(`API listening on http://localhost:${port} (docs: /api/docs)`);
+  console.log(`API listening on 0.0.0.0:${port} (docs: /api/docs)`);
 }
 
 bootstrap();

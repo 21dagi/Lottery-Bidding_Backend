@@ -1,0 +1,21 @@
+# Render.com blueprint (optional). Or set these in the dashboard:
+# Build Command:  npm install && npm run render:build
+# Start Command:  npm run render:start
+# Do NOT set PORT — Render injects it automatically.
+
+services:
+  - type: web
+    name: lottery-backend
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run render:build
+    startCommand: npm run render:start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=460
+      # Set the rest in the Render dashboard (secrets):
+      # DATABASE_URL, DIRECT_URL, TELEGRAM_BOT_TOKEN, CLOUDINARY_URL,
+      # USER_JWT_SECRET, ADMIN_JWT_SECRET, ADMIN_BOOTSTRAP_PASSWORD, CORS_ORIGINS
