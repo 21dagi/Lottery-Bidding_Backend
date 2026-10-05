@@ -15,9 +15,11 @@ import {
   IsArray,
   IsBoolean,
   IsIn,
+  IsInt,
   IsNumber,
   IsOptional,
   IsString,
+  Max,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -31,7 +33,10 @@ import { AuditInterceptor } from '../common/interceptors/audit.interceptor';
 import { CurrentAdmin } from '../common/decorators/current-user.decorator';
 
 class PrizeDto {
-  @IsIn([1, 2, 3])
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(3)
   place!: 1 | 2 | 3;
 
   @IsIn(['money', 'product'])
@@ -49,6 +54,7 @@ class PrizeDto {
   detail?: string;
 
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   amountEtb?: number;
 
@@ -75,11 +81,13 @@ class CreateLotteryDto {
   @IsString()
   description?: string;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0.01)
   ticketPriceEtb!: number;
 
-  @IsNumber()
+  @Type(() => Number)
+  @IsInt()
   @Min(1)
   totalTickets!: number;
 

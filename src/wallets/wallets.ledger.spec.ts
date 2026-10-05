@@ -73,7 +73,14 @@ describe('DepositsService reject reason', () => {
     const wallets = {} as ConstructorParameters<typeof DepositsService>[1];
     const events = { emit: jest.fn() } as unknown as EventEmitter2;
     const verifier = { verify: jest.fn() };
-    const service = new DepositsService(prisma, wallets, events, verifier);
+    const settings = {} as ConstructorParameters<typeof DepositsService>[2];
+    const service = new DepositsService(
+      prisma,
+      wallets,
+      settings,
+      events,
+      verifier as never,
+    );
 
     await expect(service.reject('d1', 'a1', '')).rejects.toBeInstanceOf(
       BadRequestException,
@@ -99,9 +106,16 @@ describe('DepositsService reject reason', () => {
     const wallets = {
       creditDeposit: jest.fn(),
     } as unknown as ConstructorParameters<typeof DepositsService>[1];
+    const settings = {} as ConstructorParameters<typeof DepositsService>[2];
     const events = { emit: jest.fn() } as unknown as EventEmitter2;
     const verifier = { verify: jest.fn() };
-    const service = new DepositsService(prisma, wallets, events, verifier);
+    const service = new DepositsService(
+      prisma,
+      wallets,
+      settings,
+      events,
+      verifier as never,
+    );
 
     const result = await service.approve('d1', 'admin');
     expect(result.status).toBe('APPROVED');

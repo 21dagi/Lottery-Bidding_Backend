@@ -24,10 +24,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
         message = body;
       } else if (typeof body === 'object' && body !== null) {
         const obj = body as Record<string, unknown>;
-        message = String(obj.message ?? message);
         if (Array.isArray(obj.message)) {
-          message = obj.message.join(', ');
+          message = obj.message.map(String).join('; ');
           code = 'VALIDATION_ERROR';
+        } else if (obj.message != null) {
+          message = String(obj.message);
         }
         if (typeof obj.code === 'string') code = obj.code;
         else if (status === HttpStatus.UNAUTHORIZED) code = 'UNAUTHORIZED';

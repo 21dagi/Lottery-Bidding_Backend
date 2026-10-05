@@ -210,13 +210,17 @@ export class AuthService {
   }
 
   cookieOptions() {
+    // Cross-site admin (Vercel) → API (Render) needs SameSite=None + Secure.
+    const sameSite = (this.config.get<string>('COOKIE_SAME_SITE') || 'lax') as
+      | 'lax'
+      | 'strict'
+      | 'none';
+    const secure =
+      this.config.get<boolean>('COOKIE_SECURE') === true || sameSite === 'none';
     return {
       httpOnly: true,
-      secure: this.config.get<boolean>('COOKIE_SECURE') === true,
-      sameSite: (this.config.get<string>('COOKIE_SAME_SITE') || 'lax') as
-        | 'lax'
-        | 'strict'
-        | 'none',
+      secure,
+      sameSite,
       path: '/auth/admin',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     };
