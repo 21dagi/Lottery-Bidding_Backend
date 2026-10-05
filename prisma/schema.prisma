@@ -26,6 +26,13 @@ enum DepositStatus {
   REJECTED
 }
 
+enum DepositVerificationOutcome {
+  PENDING
+  AUTO_APPROVED
+  NEEDS_MANUAL_REVIEW
+  REJECTED_DUPLICATE
+}
+
 enum PaymentMethod {
   telebirr
   cbe
@@ -143,25 +150,51 @@ model WalletTransaction {
 }
 
 model Deposit {
-  id                           String        @id @default(cuid())
-  userId                       String        @map("user_id")
-  amount                       Decimal       @db.Decimal(18, 2)
+  id                           String                      @id @default(cuid())
+  userId                       String                      @map("user_id")
+  amount                       Decimal                     @db.Decimal(18, 2)
   method                       PaymentMethod
-  status                       DepositStatus @default(PENDING)
-  mediaId                      String        @map("media_id")
-  verificationProviderResponse Json?         @map("verification_provider_response")
-  reviewedByAdminId            String?       @map("reviewed_by_admin_id")
-  reviewedAt                   DateTime?     @map("reviewed_at")
-  rejectionReason              String?       @map("rejection_reason")
-  createdAt                    DateTime      @default(now()) @map("created_at")
+  status                       DepositStatus               @default(PENDING)
+  mediaId                      String?                     @map("media_id")
+  externalReference            String?                     @map("external_reference")
+  verificationOutcome          DepositVerificationOutcome  @default(PENDING) @map("verification_outcome")
+  verifiedAmount               Decimal?                    @map("verified_amount") @db.Decimal(18, 2)
+  verifiedProviderSource       String?                     @map("verified_provider_source")
+  linksRequestId               String?                     @map("links_request_id")
+  normalizedBankReference      String?                     @map("normalized_bank_reference")
+  verificationProviderResponse Json?                       @map("verification_provider_response")
+  reviewedByAdminId            String?                     @map("reviewed_by_admin_id")
+  reviewedAt                   DateTime?                   @map("reviewed_at")
+  rejectionReason              String?                     @map("rejection_reason")
+  createdAt                    DateTime                    @default(now()) @map("created_at")
 
-  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  media          Media      @relation(fields: [mediaId], references: [id])
-  reviewedByAdmin AdminUser? @relation("DepositReviewer", fields: [reviewedByAdminId], references: [id])
+  user                User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media               Media?                   @relation(fields: [mediaId], references: [id])
+  reviewedByAdmin     AdminUser?               @relation("DepositReviewer", fields: [reviewedByAdminId], references: [id])
+  verifiedReceipt     VerifiedPaymentReceipt?
 
   @@index([status, createdAt])
   @@index([userId, createdAt])
+  @@index([normalizedBankReference])
   @@map("deposits")
+}
+
+/// Immutable ledger of bank receipts already credited — prevents replay of the same transfer.
+model VerifiedPaymentReceipt {
+  id                   String   @id @default(cuid())
+  providerFamily       String   @map("provider_family")
+  normalizedReference  String   @map("normalized_reference")
+  depositId            String   @unique @map("deposit_id")
+  amountEtb            Decimal  @map("amount_etb") @db.Decimal(18, 2)
+  receiverMatched      String?  @map("receiver_matched")
+  receiptSnapshot      Json     @map("receipt_snapshot")
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  deposit Deposit @relation(fields: [depositId], references: [id], onDelete: Cascade)
+
+  @@unique([providerFamily, normalizedReference])
+  @@index([createdAt])
+  @@map("verified_payment_receipts")
 }
 
 model Media {

@@ -27,4 +27,6 @@ export const envValidationSchema = Joi.object({
   MEDIA_MAX_BYTES: Joi.number().default(5_242_880),
   COOKIE_SECURE: Joi.boolean().truthy('true').falsy('false').default(false),
   COOKIE_SAME_SITE: Joi.string().valid('lax', 'strict', 'none').default('lax'),
+  /** links.et receipt verification — server-only; never expose to clients */
+  LINKS_ET_API_KEY: Joi.string().allow('').optional(),
 });

@@ -9,7 +9,15 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { IsEnum, IsNumber, IsString, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+  MinLength,
+  ValidateIf,
+} from 'class-validator';
 import { PaymentMethod } from '@prisma/client';
 import { Throttle } from '@nestjs/throttler';
 import { UserJwtGuard } from '../common/guards/user-jwt.guard';
@@ -36,8 +44,16 @@ class CreateDepositDto {
   @IsEnum(PaymentMethod)
   method!: PaymentMethod;
 
+  @IsOptional()
+  @ValidateIf((_, v) => v !== undefined && v !== null && v !== '')
   @IsString()
-  mediaId!: string;
+  mediaId?: string;
+
+  @IsOptional()
+  @ValidateIf((_, v) => v !== undefined && v !== null && v !== '')
+  @IsString()
+  @MinLength(4)
+  externalReference?: string;
 }
 
 @ApiTags('me')

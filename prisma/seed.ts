@@ -27,11 +27,11 @@ function loadEnvFile() {
 loadEnvFile();
 
 const DEFAULT_PAYMENT_ACCOUNTS = [
-  { method: 'telebirr', label: 'Telebirr', value: '0911223344', enabled: true },
-  { method: 'cbe', label: 'CBE Birr', value: '1000123456789', enabled: true },
-  { method: 'mpesa', label: 'M-Pesa', value: '0711223344', enabled: true },
+  { method: 'telebirr', label: 'Telebirr', value: '0961155660', enabled: true },
+  { method: 'cbe', label: 'CBE', value: '1000442979395', enabled: true },
+  { method: 'abyssinia', label: 'Bank of Abyssinia', value: '132319348', enabled: true },
+  { method: 'mpesa', label: 'M-Pesa', value: '', enabled: false },
   { method: 'awash', label: 'Awash Bank', value: '', enabled: false },
-  { method: 'abyssinia', label: 'Bank of Abyssinia', value: '', enabled: false },
   { method: 'amole', label: 'Amole', value: '', enabled: false },
 ];
 

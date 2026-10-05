@@ -16,11 +16,11 @@ export type SettingsDto = {
 };
 
 export const DEFAULT_PAYMENT_ACCOUNTS: PaymentAccount[] = [
-  { method: 'telebirr', label: 'Telebirr', value: '09xxxxxxxx', enabled: true },
-  { method: 'cbe', label: 'CBE Birr', value: '1000xxxxxxxx', enabled: true },
-  { method: 'mpesa', label: 'M-Pesa', value: '07xxxxxxxx', enabled: true },
+  { method: 'telebirr', label: 'Telebirr', value: '0961155660', enabled: true },
+  { method: 'cbe', label: 'CBE', value: '1000442979395', enabled: true },
+  { method: 'abyssinia', label: 'Bank of Abyssinia', value: '132319348', enabled: true },
+  { method: 'mpesa', label: 'M-Pesa', value: '', enabled: false },
   { method: 'awash', label: 'Awash Bank', value: '', enabled: false },
-  { method: 'abyssinia', label: 'Bank of Abyssinia', value: '', enabled: false },
   { method: 'amole', label: 'Amole', value: '', enabled: false },
 ];
 
@@ -86,10 +86,30 @@ export class SettingsService {
         botUsername: '',
         supportContact: '',
         paymentInstructions:
-          'Transfer the exact amount, then upload your payment screenshot.',
+          'Transfer the exact amount to the account shown, then submit your transaction ID or receipt screenshot for verification.',
         paymentAccounts: DEFAULT_PAYMENT_ACCOUNTS,
       },
       update: {},
+    });
+  }
+
+  /** Force-sync live pay-to accounts (used by seed / ops). */
+  async syncPaymentAccounts() {
+    return this.prisma.appSettings.upsert({
+      where: { id: 'default' },
+      create: {
+        id: 'default',
+        botUsername: '',
+        supportContact: '',
+        paymentInstructions:
+          'Transfer the exact amount to the account shown, then submit your transaction ID or receipt screenshot for verification.',
+        paymentAccounts: DEFAULT_PAYMENT_ACCOUNTS,
+      },
+      update: {
+        paymentAccounts: DEFAULT_PAYMENT_ACCOUNTS,
+        paymentInstructions:
+          'Transfer the exact amount to the account shown, then submit your transaction ID or receipt screenshot for verification.',
+      },
     });
   }
 }

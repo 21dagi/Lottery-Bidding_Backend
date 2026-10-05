@@ -118,19 +118,22 @@ export class NotificationsService {
     await this.createInApp({
       userId: payload.userId,
       type: 'deposit.submitted',
-      title: 'Deposit submitted',
-      body: `Your deposit of ${payload.amountEtb} ETB is pending review.`,
+      title: 'Deposit pending approval',
+      body: `Your deposit of ${payload.amountEtb} ETB is waiting for approver review. You will be notified when it is approved.`,
       kind: 'deposit',
     });
   }
 
   @OnEvent(DOMAIN_EVENTS.DEPOSIT_APPROVED)
   async onDepositApproved(payload: DepositApprovedPayload) {
+    const instant = payload.adminId === 'system';
     await this.createInApp({
       userId: payload.userId,
       type: 'deposit.approved',
-      title: 'Deposit approved',
-      body: `${payload.amountEtb} ETB was credited to your wallet.`,
+      title: instant ? 'Deposit verified' : 'Deposit approved',
+      body: instant
+        ? `${payload.amountEtb} ETB verified and credited to your wallet.`
+        : `${payload.amountEtb} ETB was credited to your wallet.`,
       kind: 'deposit',
     });
   }
