@@ -1,0 +1,20 @@
+# API only — Postgres is Supabase (cloud). No local db container.
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      MEDIA_UPLOAD_DIR: /app/uploads
+    volumes:
+      - lottery_uploads:/app/uploads
+
+volumes:
+  lottery_uploads:
