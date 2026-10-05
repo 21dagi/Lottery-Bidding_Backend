@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { WalletTxType } from '@prisma/client';
+import { DepositStatus, PaymentMethod, WalletTxType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { etbDecimal, toEtbNumber } from '../common/utils/money';
 import { DOMAIN_EVENTS } from '../common/events/event-names';
@@ -50,25 +50,47 @@ export class WalletsService {
       ADMIN_ADJUST: WalletTxType.ADMIN_ADJUST,
     };
 
+    const filterType = opts.type ? typeMap[opts.type] : undefined;
+    const includeDepositAttempts =
+      !filterType || filterType === WalletTxType.DEPOSIT;
+
     const where = {
       walletId: wallet.id,
-      ...(opts.type && typeMap[opts.type]
-        ? { type: typeMap[opts.type] }
-        : {}),
+      ...(filterType ? { type: filterType } : {}),
     };
 
-    const [total, rows] = await this.prisma.$transaction([
-      this.prisma.walletTransaction.count({ where }),
+    const [ledgerRows, deposits] = await Promise.all([
       this.prisma.walletTransaction.findMany({
         where,
         orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
+        take: 200,
       }),
+      includeDepositAttempts
+        ? this.prisma.deposit.findMany({
+            where: {
+              userId,
+              // Approved deposits already appear via ledger credit rows.
+              status: { in: [DepositStatus.PENDING, DepositStatus.REJECTED] },
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 100,
+          })
+        : Promise.resolve([]),
     ]);
 
+    const ledgerItems = ledgerRows.map((tx) => this.toUserTxDto(tx));
+    const depositItems = deposits.map((d) => this.toDepositActivityDto(d));
+
+    const merged = [...ledgerItems, ...depositItems].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+
+    const total = merged.length;
+    const items = merged.slice((page - 1) * pageSize, page * pageSize);
+
     return {
-      items: rows.map((tx) => this.toUserTxDto(tx)),
+      items,
       total,
       page,
       pageSize,
@@ -286,6 +308,29 @@ export class WalletsService {
     };
   }
 
+  private toDepositActivityDto(d: {
+    id: string;
+    amount: { toString(): string };
+    method: PaymentMethod;
+    status: DepositStatus;
+    rejectionReason: string | null;
+    createdAt: Date;
+  }) {
+    const methodLabel = depositMethodLabel(d.method);
+    const rejected = d.status === DepositStatus.REJECTED;
+    return {
+      id: `deposit-${d.id}`,
+      type: 'deposit',
+      title: `Deposit ${methodLabel}`,
+      meta: rejected
+        ? d.rejectionReason?.trim() || 'Rejected by approver'
+        : 'Waiting for approver review',
+      amountEtb: toEtbNumber(d.amount),
+      status: rejected ? 'rejected' : 'pending',
+      createdAt: d.createdAt.toISOString(),
+    };
+  }
+
   private titleFor(type: WalletTxType) {
     switch (type) {
       case 'DEPOSIT':
@@ -299,5 +344,24 @@ export class WalletsService {
       default:
         return 'Transaction';
     }
+  }
+}
+
+function depositMethodLabel(method: PaymentMethod): string {
+  switch (method) {
+    case PaymentMethod.telebirr:
+      return 'Telebirr';
+    case PaymentMethod.cbe:
+      return 'CBE';
+    case PaymentMethod.abyssinia:
+      return 'BOA';
+    case PaymentMethod.mpesa:
+      return 'M-Pesa';
+    case PaymentMethod.awash:
+      return 'Awash';
+    case PaymentMethod.amole:
+      return 'Amole';
+    default:
+      return method;
   }
 }
