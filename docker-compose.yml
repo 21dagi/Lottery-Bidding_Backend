@@ -1,4 +1,4 @@
-# API only — Postgres is Supabase (cloud). No local db container.
+# API only — Postgres is Supabase (cloud). Media is Cloudinary (no local volume).
 services:
   api:
     build:
@@ -12,9 +12,3 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      MEDIA_UPLOAD_DIR: /app/uploads
-    volumes:
-      - lottery_uploads:/app/uploads
-
-volumes:
-  lottery_uploads:

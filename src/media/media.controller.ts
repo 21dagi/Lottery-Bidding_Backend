@@ -4,18 +4,15 @@ import {
   Param,
   Post,
   Req,
-  Res,
   UploadedFile,
   UseInterceptors,
   UnauthorizedException,
-  NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { memoryStorage } from 'multer';
-import { Response, Request } from 'express';
-import { existsSync } from 'fs';
+import { Request } from 'express';
 import { MediaService } from './media.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -63,16 +60,6 @@ export class MediaController {
         actor.type === 'ADMIN' ? UploadedByType.ADMIN : UploadedByType.USER,
       uploadedById: actor.id,
     });
-  }
-
-  /** Public file serve by filename (URL stored on Media.url). Must be before :id */
-  @Get('files/:filename')
-  async serveFile(@Param('filename') filename: string, @Res() res: Response) {
-    const path = this.media.resolveFilePath(filename);
-    if (!existsSync(path)) {
-      throw new NotFoundException({ code: 'NOT_FOUND', message: 'File not found' });
-    }
-    return res.sendFile(path);
   }
 
   @Get(':id')

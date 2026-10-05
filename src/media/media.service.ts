@@ -6,11 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UploadedByType } from '@prisma/client';
-import { createWriteStream, existsSync, mkdirSync } from 'fs';
-import { join, extname } from 'path';
-import { randomUUID } from 'crypto';
-import { pipeline } from 'stream/promises';
-import { Readable } from 'stream';
+import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 import { PrismaService } from '../prisma/prisma.service';
 
 const ALLOWED_MIME = new Set([
@@ -22,15 +18,62 @@ const ALLOWED_MIME = new Set([
 
 @Injectable()
 export class MediaService {
+  private configured = false;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
   ) {}
 
-  private uploadDir() {
-    const dir = this.config.get<string>('MEDIA_UPLOAD_DIR') || './uploads';
-    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-    return dir;
+  private ensureCloudinary() {
+    if (this.configured) return;
+    const url = this.config.get<string>('CLOUDINARY_URL');
+    if (!url) {
+      throw new BadRequestException({
+        code: 'VALIDATION_ERROR',
+        message: 'CLOUDINARY_URL is not configured',
+      });
+    }
+    const match = /^cloudinary:\/\/([^:]+):([^@]+)@(.+)$/.exec(url.trim());
+    if (!match) {
+      throw new BadRequestException({
+        code: 'VALIDATION_ERROR',
+        message:
+          'CLOUDINARY_URL must look like cloudinary://API_KEY:API_SECRET@CLOUD_NAME',
+      });
+    }
+    cloudinary.config({
+      cloud_name: match[3],
+      api_key: match[1],
+      api_secret: match[2],
+      secure: true,
+    });
+    this.configured = true;
+  }
+
+  private uploadToCloudinary(
+    buffer: Buffer,
+    mimeType: string,
+    folder: string,
+  ): Promise<UploadApiResponse> {
+    this.ensureCloudinary();
+    return new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder,
+          resource_type: 'image',
+          overwrite: false,
+        },
+        (err, result) => {
+          if (err || !result) {
+            reject(err ?? new Error('Cloudinary upload failed'));
+            return;
+          }
+          resolve(result);
+        },
+      );
+      stream.end(buffer);
+    });
   }
 
   async saveUpload(input: {
@@ -52,15 +95,19 @@ export class MediaService {
       });
     }
 
-    const ext = extname(input.file.originalname).toLowerCase() || '.bin';
-    const filename = `${randomUUID()}${ext}`;
-    const abs = join(this.uploadDir(), filename);
-    await pipeline(Readable.from(input.file.buffer), createWriteStream(abs));
+    const uploaded = await this.uploadToCloudinary(
+      input.file.buffer,
+      input.file.mimetype,
+      'lottery-bid',
+    );
 
-    const baseUrl =
-      this.config.get<string>('MEDIA_BASE_URL') ||
-      'http://localhost:3000/media/files';
-    const url = `${baseUrl.replace(/\/$/, '')}/${filename}`;
+    const url = uploaded.secure_url || uploaded.url;
+    if (!url) {
+      throw new BadRequestException({
+        code: 'VALIDATION_ERROR',
+        message: 'Cloudinary did not return an image URL',
+      });
+    }
 
     const media = await this.prisma.media.create({
       data: {
@@ -72,7 +119,11 @@ export class MediaService {
       },
     });
 
-    return { id: media.id, url: media.url };
+    return {
+      id: media.id,
+      url: media.url,
+      publicId: uploaded.public_id,
+    };
   }
 
   async getAuthorized(
@@ -96,10 +147,5 @@ export class MediaService {
       sizeBytes: media.sizeBytes,
       createdAt: media.createdAt.toISOString(),
     };
-  }
-
-  resolveFilePath(filename: string) {
-    const safe = filename.replace(/[^a-zA-Z0-9._-]/g, '');
-    return join(this.uploadDir(), safe);
   }
 }
